@@ -1,7 +1,7 @@
 '''The script with the inside logic of a bot
 to find candidates for romantic dates. '''
 import datetime as dt
-from typing import List
+from typing import List, Union
 from vkbottle import API
 from config import USER_TOKEN
 from models import User, Candidate, Photo
@@ -9,9 +9,11 @@ from models import User, Candidate, Photo
 user_api = API(USER_TOKEN)
 
 
-def _string_with_born_to_age(born: str) -> int:
+def _string_with_born_to_age(born: Union[str, None]) -> Union[int, None]:
     ''' The function takes date of birth as a string
     and returns age as a integer '''
+    if born is None:
+        return None
     today = dt.date.today()
     born_date = dt.datetime.strptime(born, "%d.%m.%Y")
     return today.year - born_date.year - ((today.month, today.day) < (
@@ -38,8 +40,15 @@ async def _candidate_search(user, offset) -> tuple:
     ''' The function takes the data for the candidate search and the number
      for the offset in the search, and returns a tuple of candidate data
      and the offset number '''
-    candidate = await user_api.users.search(age_from=user.age - 5,
-                                            age_to=user.age + 5,
+    if user.age is None:
+        age_from = 16
+        age_to = 100
+    else:
+        age_from=user.age - 5
+        age_to=user.age + 5
+
+    candidate = await user_api.users.search(age_from=age_from,
+                                            age_to=age_to,
                                             sex=_get_opposite_sex(user.sex_id),
                                             city=user.city_id,
                                             count=1,
